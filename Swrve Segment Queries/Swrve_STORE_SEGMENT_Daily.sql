@@ -2,16 +2,18 @@
 WITH historical_data AS (
 SELECT
 	synthetic_id,
-	date('{{ ds }}') - 1 - MAX(event_day) AS last_purchase_days,
-	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 46 AND date('{{ ds }}') - 2 THEN 1 ELSE 0 END) AS transactions_46,
-	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 46 AND date('{{ ds }}') - 2 THEN amount_paid_usd ELSE 0 END) AS revenue_46,
-	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 45 AND date('{{ ds }}') - 1 THEN 1 ELSE 0 END) AS transactions_45,
-	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 45 AND date('{{ ds }}') - 1 THEN amount_paid_usd ELSE 0 END) AS revenue_45,
+	CURRENT_DATE - 1 - MAX(event_day) AS last_purchase_days,
+	MAX(user_id*1) AS mesmo_id,
+	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 46 AND CURRENT_DATE - 2 THEN 1 ELSE 0 END) AS transactions_46,
+	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 46 AND CURRENT_DATE - 2 THEN amount_paid_usd ELSE 0 END) AS revenue_46,
+	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 45 AND CURRENT_DATE - 1 THEN 1 ELSE 0 END) AS transactions_45,
+	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 45 AND CURRENT_DATE - 1 THEN amount_paid_usd ELSE 0 END) AS revenue_45,
 	SUM(amount_paid_usd) AS revenue_lt,
 	COUNT(*) AS transactions_lt
 FROM gsnmobile.events_payments
 WHERE app = 'GSN Casino'
 GROUP BY 1)
+
 
 , users AS (
 SELECT
@@ -21,8 +23,8 @@ SELECT
 	last_purchase_days,
 	CASE 
 		WHEN revenue_lt < 5 THEN 'A' 
-                 WHEN revenue_lt  > 0 AND revenue_45 = 0 AND revenue_lt < 5 THEN 'A'
-                 WHEN revenue_lt  > 0 AND revenue_45 = 0 AND revenue_lt >= 5 THEN 'B'
+         WHEN revenue_lt  > 0 AND revenue_45 = 0 AND revenue_lt < 5 THEN 'A'
+         WHEN revenue_lt  > 0 AND revenue_45 = 0 AND revenue_lt >= 5 THEN 'B'
 	  	 WHEN  transactions_lt <= 1 THEN 'A'
 	  	 WHEN  transactions_lt > 1 AND revenue_45/transactions_45 <= 4 THEN 'B'
 	  	 WHEN  transactions_lt > 1 AND revenue_45/transactions_45 > 4 AND revenue_45/transactions_45 <= 8 THEN 'C'
@@ -48,11 +50,8 @@ SELECT
 
 
 FROM historical_data a
-JOIN gsnmobile.dim_device_mesmoids m 
-	USING(synthetic_id)
 JOIN gsnmobile.swrve_casino_mapping y
-	ON m.mesmo_id = y.mesmoid
-WHERE m.app_name = 'GSN Casino'
+	ON a.mesmo_id = y.mesmoid
 )
 
 SELECT 
@@ -60,6 +59,7 @@ SELECT
 	swrve_user_id,
 	STORE_SEGMENT
 FROM users
+
 WHERE ((revenue_45 > 0 AND revenue_46 = 0)
 		OR (STORE_SEGMENT_PREV <> STORE_SEGMENT)
 		OR (last_purchase_days = 46))
