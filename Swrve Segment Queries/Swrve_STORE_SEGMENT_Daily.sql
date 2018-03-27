@@ -13,7 +13,7 @@ SELECT
 	COUNT(*) AS transactions_lt
 FROM gsnmobile.events_payments
 WHERE app = 'GSN Casino'
-GROUP BY 1)
+GROUP BY 1) 
 
 -- Calculating current segment and previous segment
 
