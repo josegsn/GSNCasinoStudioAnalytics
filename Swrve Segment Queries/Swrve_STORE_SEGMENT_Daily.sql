@@ -1,19 +1,21 @@
+-- Getting 45 days data (segment) and the data of from the 45 days before yesterday (prev segment data-point)
 
 WITH historical_data AS (
 SELECT
 	synthetic_id,
-	CURRENT_DATE - 1 - MAX(event_day) AS last_purchase_days,
+	date('{{ ds }}') - MAX(event_day) AS last_purchase_days,
 	MAX(user_id*1) AS mesmo_id,
-	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 46 AND CURRENT_DATE - 2 THEN 1 ELSE 0 END) AS transactions_46,
-	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 46 AND CURRENT_DATE - 2 THEN amount_paid_usd ELSE 0 END) AS revenue_46,
-	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 45 AND CURRENT_DATE - 1 THEN 1 ELSE 0 END) AS transactions_45,
-	SUM(CASE WHEN event_day BETWEEN CURRENT_DATE - 45 AND CURRENT_DATE - 1 THEN amount_paid_usd ELSE 0 END) AS revenue_45,
+	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 46 AND date('{{ ds }}') - 1 THEN 1 ELSE 0 END) AS transactions_46,
+	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 46 AND date('{{ ds }}') - 1 THEN amount_paid_usd ELSE 0 END) AS revenue_46,
+	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 45 AND date('{{ ds }}') - 0 THEN 1 ELSE 0 END) AS transactions_45,
+	SUM(CASE WHEN event_day BETWEEN date('{{ ds }}') - 45 AND date('{{ ds }}') - 0 THEN amount_paid_usd ELSE 0 END) AS revenue_45,
 	SUM(amount_paid_usd) AS revenue_lt,
 	COUNT(*) AS transactions_lt
 FROM gsnmobile.events_payments
 WHERE app = 'GSN Casino'
 GROUP BY 1)
 
+-- Calculating current segment and previous segment
 
 , users AS (
 SELECT
@@ -60,7 +62,7 @@ SELECT
 	STORE_SEGMENT
 FROM users
 
-WHERE ((revenue_45 > 0 AND revenue_46 = 0)
-		OR (STORE_SEGMENT_PREV <> STORE_SEGMENT)
-		OR (last_purchase_days = 46))
+WHERE ((revenue_45 > 0 AND revenue_46 = 0) -- New spender or re-activated iddle spender
+		OR (STORE_SEGMENT_PREV <> STORE_SEGMENT) -- Change in store segnent
+		OR (last_purchase_days = 46)) -- Active spender becoming iddle spender
 

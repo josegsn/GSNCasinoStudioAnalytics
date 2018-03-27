@@ -2,6 +2,7 @@
 WITH segments AS (
 SELECT 
 	synthetic_id,
+	MAX(attr3*1) AS mesmo_id,
 	MAX(CASE 
 		WHEN attr30 IS NULL THEN 1
 		WHEN attr30 = 'BRONZE' THEN 1
@@ -13,7 +14,7 @@ SELECT
 		END) AS tier_today,
 
 	IFNULL(MAX(CASE 
-			WHEN event_day = date('{{ ds }}') - 1 THEN 0
+			WHEN event_day = date('{{ ds }}')  THEN 0
 			WHEN attr30 IS NULL THEN 1
 			WHEN attr30 = 'BRONZE' THEN 1
 			WHEN attr30 = 'SILVER' THEN 2
@@ -26,7 +27,7 @@ SELECT
 FROM gsnmobile.events
 WHERE app_name = 'GSN Casino'
 	AND attr20 = 'Loyalty'	
-	AND event_day BETWEEN date('{{ ds }}') - 120 AND date('{{ ds }}') - 1
+	AND event_day BETWEEN date('{{ ds }}') - 120 AND date('{{ ds }}') 
 GROUP BY 1)
 
 SELECT
@@ -39,10 +40,8 @@ SELECT
 		WHEN tier_today = 5 THEN 'BLUEDIAMOND'
 		WHEN tier_today = 6 THEN 'PLATINUM'
 	END as LOYALTY_TIER
-FROM segments
-JOIN gsnmobile.dim_device_mesmoids m 
-	USING(synthetic_id)
+FROM segments a
+
 JOIN gsnmobile.swrve_casino_mapping y
-	ON m.mesmo_id = y.mesmoid
-WHERE m.app_name = 'GSN Casino'
-	AND tier_today > tier_last
+	ON a.mesmo_id = y.mesmoid
+WHERE tier_today > tier_last
