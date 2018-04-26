@@ -10,7 +10,7 @@ SELECT
 		WHEN attr30 = 'GOLD' THEN 3
 		WHEN attr30 = 'DIAMOND' THEN 4
 		WHEN attr30 = 'BLUEDIAMOND' THEN 5
-		WHEN attr30 = 'PLATINUM' THEN 5
+		WHEN attr30 = 'PLATINUM' THEN 6
 		END) AS tier_today,
 
 	IFNULL(MAX(CASE 
@@ -21,7 +21,7 @@ SELECT
 			WHEN attr30 = 'GOLD' THEN 3
 			WHEN attr30 = 'DIAMOND' THEN 4
 			WHEN attr30 = 'BLUEDIAMOND' THEN 5
-			WHEN attr30 = 'PLATINUM' THEN 5
+			WHEN attr30 = 'PLATINUM' THEN 6
 			END),0) AS tier_last
 
 FROM gsnmobile.events
